@@ -3,7 +3,6 @@ import json
 
 import yaml
 import typer
-from tqdm import tqdm
 
 
 def convert(
