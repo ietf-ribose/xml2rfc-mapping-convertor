@@ -26,8 +26,25 @@ from https://github.com/ietf-ribose/bibxml-data-archive.
 This will print JSON to standard output,
 you can pipe it into a file for example.
 
-Advanced example::
+More flags::
 
     python convert.py w3c-mapping-2.yaml bibxml4 --verbose --out w3c-mappings.json
 
-This writes JSON to a file and provides a bit more extensive output.
+This writes JSON to a file (overwriting it, if exists)
+and provides more detailed output.
+
+Using append::
+
+    python convert.py w3c-mapping-2.yaml bibxml4 --verbose --out all-mappings.json --append
+
+This appends newly parsed mappings to the specified JSON file,
+preserving mappings already in that file if such file exists.
+
+Notable behaviour:
+
+- If specified JSON file exists, but preexisting contents
+  do not conform to the mappings file format, an error will be raised.
+
+- If a path already exists in the specified output file
+  and maps to the same docid, script will output a warning to stderr.
+  If it maps to a *different* docid, script will fail with an error.
