@@ -127,13 +127,23 @@ def create_reporter(
     report_file.write('<meta charset="utf-8">')
     report_file.write(f'<title>Report for {dirname}</title>')
     report_file.write('<body>')
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))\">Open all details</a>")
+    report_file.write(f'<h1>Report for {dirname}</h1>')
+    report_file.write(f'<p>Testing {api_root} ')
+    if reference_root:
+        report_file.write(f'with {reference_root} for reference comparison')
+
+    report_file.write('<p>')
+    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))\">Open all</a>")
     report_file.write("&emsp;•&emsp;")
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))\">Close all details</a>")
+    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))\">Close all</a>")
     report_file.write("&emsp;•&emsp;")
     report_file.write("<a href=\"javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')\">Hide successful paths</a>")
     report_file.write("&emsp;•&emsp;")
+    if reference_root:
+        report_file.write("<a href=\"javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')\">Hide paths w/o diff</a>")
+        report_file.write("&emsp;•&emsp;")
     report_file.write("<a href=\"javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')\">Show all paths</a>")
+    report_file.write('</p>')
     report_file.write('<details><summary>Processed paths</summary>')
 
     stats: Stats = Stats()
@@ -159,7 +169,7 @@ def create_reporter(
     ):
         basename = os.path.basename(subpath)
 
-        report_file.write(f'<details class="path {"error" if outcome.error else "success"}"><summary>{basename}')
+        report_file.write(f'<details class="path {"error" if outcome.error else "success"} {"has-diff" if outcome.diff else ""}"><summary>{dirname} / {basename}')
         if outcome.error:
             report_file.write('— <strong>error ⚠️</strong>')
         elif outcome.successful_method:
