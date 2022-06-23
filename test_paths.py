@@ -122,29 +122,37 @@ def create_reporter(
     report_file = open(_reports_dir / f'{dirname}-report.html', 'w')
     report_file.truncate(0)
     report_file.seek(0)
-    report_file.write('<!doctype html>')
-    report_file.write('<head>')
-    report_file.write('<meta charset="utf-8">')
-    report_file.write(f'<title>Report for {dirname}</title>')
-    report_file.write('<body>')
-    report_file.write(f'<h1>Report for {dirname}</h1>')
-    report_file.write(f'<p>Testing {api_root} ')
-    if reference_root:
-        report_file.write(f'with {reference_root} for reference comparison')
-
-    report_file.write('<p>')
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))\">Open all</a>")
-    report_file.write("&emsp;•&emsp;")
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))\">Close all</a>")
-    report_file.write("&emsp;•&emsp;")
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')\">Hide successful paths</a>")
-    report_file.write("&emsp;•&emsp;")
-    if reference_root:
-        report_file.write("<a href=\"javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')\">Hide paths w/o diff</a>")
-        report_file.write("&emsp;•&emsp;")
-    report_file.write("<a href=\"javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')\">Show all paths</a>")
-    report_file.write('</p>')
-    report_file.write('<details><summary>Processed paths</summary>')
+    report_file.write(f'''<!doctype html>
+        <head>
+        <style>
+            pre.xml {{
+                white-space: pre-line;
+                max-width: 80vw;
+                overflow: auto;
+                background: whiteSmoke;
+                padding: 1em;
+            }}
+            .tools a {{
+                margin-right: 1em;
+            }}
+        </style>
+        <meta charset="utf-8">
+        <title>Report for {dirname}</title>
+        <body>
+        <h1>Report for {dirname}</h1>
+        <p>
+            Testing {api_root}
+            {"comparing with " if reference_root else ""}{reference_root or ""}
+        <p class="tools">
+            <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">Open all</a>
+            <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">Close all</a>
+            <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">Hide successful paths</a>
+            <a style="{"display: none" if not reference_root else ""}" href="javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')">Hide paths w/o diff</a>
+            <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">Show all paths</a>
+        </p>
+        <details>
+            <summary>Processed paths</summary>
+    ''')
 
     stats: Stats = Stats()
     report: List[Tuple[str, PathOutcome]] = []
@@ -168,43 +176,51 @@ def create_reporter(
         outcome: PathOutcome,
     ):
         basename = os.path.basename(subpath)
-
-        report_file.write(f'<details class="path {"error" if outcome.error else "success"} {"has-diff" if outcome.diff else ""}"><summary>{dirname} / {basename}')
-        if outcome.error:
-            report_file.write('— <strong>error ⚠️</strong>')
-        elif outcome.successful_method:
-            report_file.write(f'— {outcome.successful_method.method}')
-        if outcome.diff:
-            report_file.write('— diff available')
-        report_file.write('</summary>')
-        report_file.write('<div style="padding: 0 1em 1em 1em;">')
-
         test_url = f"{api_root.removesuffix('/')}/{basename}"
-        report_file.write(f'<p>Attempted <a href="{test_url}">{test_url}</a>')
+
         if outcome.error:
-            report_file.write(f'<p>Request failed with error (possibly truncated): <pre>{html.escape(outcome.error[:500])}</pre>')
+            outcome_desc = f'<p>Request failed with (error possibly truncated): <pre>{html.escape(outcome.error[:500])}</pre>'
             stats.failed += 1
         elif meth := outcome.successful_method:
-            report_file.write(f'<p>{method_labels[meth.method]} succeeded')
+            outcome_desc = f'<p>{method_labels[meth.method]} succeeded'
             if meth.method == 'manual':
                 stats.used_mapping += 1
             elif meth.method == 'auto':
                 stats.used_auto_resolution += 1
             elif meth.method == 'fallback':
                 stats.used_fallback += 1
+
         if reference_root and outcome.reference:
             ref_url = f"{reference_root.removesuffix('/')}/{basename}"
-            report_file.write(f'<p>Reference used: <a href="{ref_url}">{ref_url}</a>')
+            reference_link = f'<p>Comparing with reference: <a href="{ref_url}">{ref_url}</a>'
+        else:
+            reference_link = ''
+
         if outcome.diff:
-            report_file.write(f'<p>Diff of effective outcome against reference:')
-            report_file.write(f'<pre>{outcome.diff}</pre>')
+            xml = f'<p>Diff of effective outcome against reference: <pre class="xml">{outcome.diff}</pre>'
         elif outcome.reference:
-            report_file.write(f'<p>Obtained XML identical to reference.')
+            xml = f'<details><summary>Obtained XML is identical to reference</summary><pre class="xml">{html.escape(outcome.resulting_xml or "XML N/A")}</pre></details>'
+        elif outcome.resulting_xml:
+            xml = f'<details><summary>Obtained XML</summary><pre class="xml">{html.escape(outcome.resulting_xml)}</pre></details>'
+        else:
+            xml = ''
 
-        if outcome.resulting_xml and not outcome.diff:
-            report_file.write(f'<details><summary>XML</summary><pre>{html.escape(outcome.resulting_xml)}</pre></details>')
-
-        report_file.write('</div></details>')
+        report_file.write(f'''
+            <details class="path {"error" if outcome.error else "success"} {"has-diff" if outcome.diff else ""}">
+                <summary>
+                    {dirname} / {basename}
+                    — {"<strong>error ⚠️</strong>" if outcome.error else outcome.successful_method.method}
+                    {"— diff available" if outcome.diff else ""}
+                </summary>
+                <div style="padding: 0 1em 1em 1em;">
+                    <p>
+                        Attempted <a href="{test_url}">{test_url}</a>
+                        {outcome_desc}
+                    {reference_link}
+                    {xml}
+                </div>
+            </details>
+        ''')
 
         stats_file.truncate(0)
         stats_file.seek(0)
