@@ -333,11 +333,17 @@ def create_reporter(
             Testing {api_root}
             {"comparing with " if reference_root else ""}{reference_root or ""}
         <p class="tools">
-            <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">Open all</a>
-            <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">Close all</a>
-            <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">Hide successful paths</a>
-            <a style="{"display: none" if not reference_root else ""}" href="javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')">Hide paths w/o diff</a>
-            <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">Show all paths</a>
+            <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">
+                Open all</a>
+            <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">
+                Close all</a>
+            <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">
+                Hide successful paths</a>
+            <a style="{"display: none" if not reference_root else ""}"
+                href="javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')">
+                Hide paths w/o diff</a>
+            <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">
+                Show all paths</a>
         </p>
         <details>
             <summary>Processed paths</summary>
@@ -365,11 +371,14 @@ def create_reporter(
         outcome: PathOutcome,
     ):
         basename = os.path.basename(subpath)
-        test_url = f"{api_root.removesuffix('/')}/{basename}"
+        test_url = f"{api_root.removesuffix('/')}/{dirname}/{basename}"
 
         if outcome.error:
             outcome_label = '<strong>error ⚠️</strong>'
-            outcome_desc = f'<p>Request failed with (error possibly truncated): <pre>{html.escape(outcome.error[:500])}</pre>'
+            outcome_desc = (
+                f'<p>Request failed with (error possibly truncated): '
+                f'<pre class="xml">{html.escape(outcome.error[:500])}</pre>'
+            )
             stats.failed += 1
         elif meth := outcome.successful_method:
             outcome_label = meth.method
@@ -385,7 +394,7 @@ def create_reporter(
             outcome_desc = ''
 
         if reference_root and outcome.reference:
-            ref_url = f"{reference_root.removesuffix('/')}/{basename}"
+            ref_url = f"{reference_root.removesuffix('/')}/{dirname}/{basename}"
             reference_link = f'<p>Comparing with reference: <a href="{ref_url}">{ref_url}</a>'
         else:
             reference_link = ''
@@ -393,14 +402,28 @@ def create_reporter(
         if outcome.diff:
             xml = f'<p>Diff of effective outcome against reference: <pre class="xml">{outcome.diff}</pre>'
         elif outcome.reference:
-            xml = f'<details><summary>Obtained XML is identical to reference</summary><pre class="xml">{html.escape(outcome.resulting_xml or "XML N/A")}</pre></details>'
+            xml = f'''
+                <details>
+                    <summary>Obtained XML is identical to reference</summary>
+                    <pre class="xml">{html.escape(outcome.resulting_xml or "XML N/A")}</pre>
+                </details>
+            '''
         elif outcome.resulting_xml:
-            xml = f'<details><summary>Obtained XML</summary><pre class="xml">{html.escape(outcome.resulting_xml)}</pre></details>'
+            xml = f'''
+                <details>
+                    <summary>Obtained XML</summary>
+                    <pre class="xml">{html.escape(outcome.resulting_xml)}</pre>
+                </details>
+            '''
         else:
             xml = ''
 
         report_file.write(f'''
-            <details class="path {"error" if outcome.error else "success"} {"has-diff" if outcome.diff else ""}">
+            <details class="
+                path
+                {"error" if outcome.error else "success"}
+                {"has-diff" if outcome.diff else ""}
+            ">
                 <summary>
                     {dirname} / {basename}
                     — {outcome_label}
