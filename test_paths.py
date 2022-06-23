@@ -327,8 +327,9 @@ def test_xml2rfc_path(
             outcome.reference = reference_result.text
             if outcome.reference != outcome.resulting_xml:
                 diffs = dmp.diff_main(
+                    outcome.reference,
                     outcome.resulting_xml,
-                    outcome.reference)
+                )
                 dmp.diff_cleanupSemantic(diffs)
                 outcome.diff = dmp.diff_prettyHtml(diffs)
 
