@@ -1,15 +1,14 @@
-This tiny script converts mappings in YAML format,
+This tiny script takes mappings in YAML format,
 such as given in https://github.com/ietf-ribose/bibxml-service/issues/133#issuecomment-1106762628,
-to JSON format recognized by BibXML service mapping import view
-(https://dev.bibxml.org/ref/modules/xml2rfc_compat/#xml2rfc_compat.views.import_manual_map).
+and creates/updates sidecar metadata files under given ``bibxml-data-archive`` root.
 
 Setup
 =====
 
 ::
 
-    python3 -m virtualenv venv
-    source venv/bin/activate
+    python3 -m virtualenv env
+    source env/bin/activate
     pip install -r requirements.txt
 
 Running
@@ -17,34 +16,25 @@ Running
 
 Simple example::
 
-    python convert.py w3c-mapping-2.yaml bibxml4
+    python update_sidecar_meta.py w3c-mapping-2.yaml /path/to/bibxml-data-archive/bibxml4
 
-With ``w3c-mapping-2.yaml`` as file containing mappings in YAML
-and ``bibxml4`` the corresponding prefix directory
-from https://github.com/ietf-ribose/bibxml-data-archive.
+With ``w3c-mapping-2.yaml`` as file containing mappings
+and second argument pointing to local copy
+of https://github.com/ietf-ribose/bibxml-data-archive.
 
-This will print JSON to standard output,
-you can pipe it into a file for example.
+This will update the contents of /path/to/bibxml-data-archive/bibxml4.
+It won’t affect any of the XML files but it will create new sidecar YAML files
+with ``primary_docid`` pointing to respective values within the given mapping YAML.
 
-More flags::
+Notable behavior that may cause data loss
+-----------------------------------------
 
-    python convert.py w3c-mapping-2.yaml bibxml4 --verbose --out w3c-mappings.json
+.. important::
 
-This writes JSON to a file (overwriting it, if exists)
-and provides more detailed output.
+   It’s recommended to run this against bibxml-data-archive with everything committed,
+   so that you can diff and undo changes easily.
 
-Using append::
-
-    python convert.py w3c-mapping-2.yaml bibxml4 --verbose --out all-mappings.json --append
-
-This appends newly parsed mappings to the specified JSON file,
-preserving mappings already in that file if such file exists.
-
-Notable behaviour:
-
-- If specified JSON file exists, but preexisting contents
-  do not conform to the mappings file format, an error will be raised.
-
-- If a path already exists in the specified output file
-  and maps to the same docid, script will output a warning to stderr.
-  If it maps to a *different* docid, script will fail with an error.
+- Any malformed sidecar metadata file is is deleted (with stderr warning).
+- Any orphaned sidecar metadata file (without corresponding XML file) is deleted (with stderr warning).
+- Preexisting docid mapping, if any for given mapped path, is overwritten (with stderr warning).
+  The rest of sidecar metadata is preserved.
