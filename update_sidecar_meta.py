@@ -11,7 +11,6 @@ from tqdm import tqdm
 def update_sidecar_meta(
     fn: str,
     datadir: str,
-    conflictbehavior: Optional[str] = None,
     verbose: bool = False,
 ):
 
