@@ -125,6 +125,19 @@ def create_reporter(
     report_file.write(f'''<!doctype html>
         <head>
         <style>
+            body, html {{
+                padding: 0;
+                margin: 0;
+            }}
+            body {{
+                padding: 1em;
+                font-size: 14px;
+                line-height: 1.2;
+                font-family: sans-serif;
+            }}
+            h1 {{
+                font-size: 120%;
+            }}
             pre.xml {{
                 white-space: pre-line;
                 max-width: 80vw;
@@ -137,9 +150,9 @@ def create_reporter(
             }}
         </style>
         <meta charset="utf-8">
-        <title>Report for {dirname}</title>
+        <title>xml2rfc path report for {dirname} directory</title>
         <body>
-        <h1>Report for {dirname}</h1>
+        <h1>xml2rfc path report for {dirname} directory</h1>
         <p>
             Testing {api_root}
             {"comparing with " if reference_root else ""}{reference_root or ""}
