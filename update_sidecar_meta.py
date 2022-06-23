@@ -147,7 +147,7 @@ def update_sidecar_meta(
     raise typer.Exit(code=0)
 
 
-def validate_sidecar(entry: dict):
+def validate_sidecar(entry: Dict[str, Any]):
     """Raises a ValueError if entry is not a valid sidecar meta file entry."""
 
     if not isinstance(entry, dict):
