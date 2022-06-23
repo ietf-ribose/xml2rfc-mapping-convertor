@@ -101,3 +101,12 @@ Notable behavior that may cause data loss
 - Any orphaned sidecar metadata file (without corresponding XML file) is deleted (with stderr warning).
 - Preexisting docid mapping, if any for given mapped path, is overwritten (with stderr warning).
   The rest of sidecar metadata is preserved.
+
+
+fix_w3c_mappings.py
+===================
+
+Document identifiers in W3C mappings
+provided per https://github.com/ietf-ribose/bibxml-service/issues/133
+seem to be missing a “W3C ” prefix. This script adds it, and takes two arguments:
+YAML filename to read and YAML filename to write. It also excludes unmapped paths.
