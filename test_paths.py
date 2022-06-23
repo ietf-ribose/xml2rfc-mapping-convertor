@@ -332,11 +332,13 @@ def create_reporter(
         <p>
             Testing {api_root}
             {"comparing with " if reference_root else ""}{reference_root or ""}
+
         <p class="tools">
             <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">
-                Open all</a>
+                Expand everything</a>
             <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">
-                Close all</a>
+                Collapse everything</a>
+            <br />
             <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">
                 Hide successful paths</a>
             <a style="{"display: none" if not reference_root else ""}"
@@ -344,7 +346,9 @@ def create_reporter(
                 Hide paths w/o diff</a>
             <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">
                 Show all paths</a>
+            <input type="text" onkeyup="const v = this.value; const allp = document.querySelectorAll('details.path'); v ? [...allp].filter(el => el.dataset.searchable.toLowerCase().indexOf(v.toLowerCase()) < 0).forEach(el => el.style.display = 'none') : allp.forEach(el => el.style.display = 'block');" placeholder="Search paths" />
         </p>
+
         <details>
             <summary>Processed paths</summary>
     ''')
@@ -419,7 +423,7 @@ def create_reporter(
             xml = ''
 
         report_file.write(f'''
-            <details class="
+            <details data-searchable="{subpath} {outcome_label}" class="
                 path
                 {"error" if outcome.error else "success"}
                 {"has-diff" if outcome.diff else ""}
