@@ -65,7 +65,8 @@ Arguments:
 - ``dirname`` indicates a directory to test
 - ``verbosity`` indicates verbosity level (default is 1)
 - ``reports-dir`` points to a directory where reports can be placed (directory must exist, can be relative).
-- ``randomize`` will cause paths to be processed at random, which means you can
+- ``randomize`` will cause paths to be processed at random,
+  which means you can test a random subset of paths by running the script for a bit and aborting with ``Ctrl+C``
 - ``reference-root`` will additionally hit this API endpoint
 - ``check-aliases`` will additionally check path aliases (e.g., ``bibxml-w3c`` will also be checked for dirname ``bibxml4``)
 
