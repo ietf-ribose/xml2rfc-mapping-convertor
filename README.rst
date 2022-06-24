@@ -110,3 +110,10 @@ Document identifiers in W3C mappings
 provided per https://github.com/ietf-ribose/bibxml-service/issues/133
 seem to be missing a “W3C ” prefix. This script adds it, and takes two arguments:
 YAML filename to read and YAML filename to write. It also excludes unmapped paths.
+
+
+validate.py
+===========
+
+Given local path to bibxml-data-root, outputs to stdout any file
+with unicode decode errors or NUL characters that break XML parsing.
