@@ -83,7 +83,7 @@ def update_sidecar_meta(
         if len(paths_mapping_to_nonexistent_docid) > 0:
             if validate_mappings == 'strict':
                 typer.echo("Paths mapped to docids that don’t exist (see stderr), aborting", err=True)
-                typer.Exit(code=1)
+                raise typer.Exit(code=1)
             elif validate_mappings == 'skip':
                 typer.echo("Warning: skipping paths mapped to docids that don’t exist (see stderr)", err=True)
                 for p in paths_mapping_to_nonexistent_docid:
