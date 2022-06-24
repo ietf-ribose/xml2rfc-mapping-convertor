@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List
 import glob
 import os
+import urllib
 from pathlib import Path
 
 import requests
@@ -194,7 +195,11 @@ def check_docid_exists(docid: str, api_root: str, api_token: str) -> Optional[bo
     Makes a request to BibXML service API, returns True if a bibitem with given
     docid is found, False if not found, None if another error occurred.
     """
-    url = f"{api_root.removesuffix('/')}/by-docid/?docid={docid}&format=relaton"
+    params = {
+        'docid': docid,
+        'format': 'relaton',
+    }
+    url = f"{api_root.removesuffix('/')}/by-docid/?{urllib.parse.urlencode(params)}"
     resp = requests.get(url, headers={
         'X-Datatracker-Token': api_token,
     })
