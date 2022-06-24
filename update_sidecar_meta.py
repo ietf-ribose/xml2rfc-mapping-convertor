@@ -74,7 +74,7 @@ def update_sidecar_meta(
 
     if bibxml_api_root and bibxml_api_token:
         paths_mapping_to_nonexistent_docid: List[str] = []
-        for key, value in mapping_dict.items():
+        for key, value in tqdm(mapping_dict.items(), desc="Checking docids exist"):
             if check_docid_exists(value, bibxml_api_root, bibxml_api_token) is False:
                 typer.echo(f"Path {key} is mapped to nonexistent docid {value}", err=True)
                 error_stats['nonexistent docids referenced'] += 1
