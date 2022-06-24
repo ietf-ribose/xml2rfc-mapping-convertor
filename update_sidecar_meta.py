@@ -191,7 +191,6 @@ def validate_sidecar(entry: Dict[str, Any]):
 
 def check_docid_exists(docid: str, api_root: str, api_token: str) -> bool:
     url = f"{api_root.removesuffix('/')}/by-docid/?docid={docid}&format=relaton"
-    print("Checkign odicd", url)
     resp = requests.get(url, headers={
         'X-Datatracker-Token': api_token,
     })
