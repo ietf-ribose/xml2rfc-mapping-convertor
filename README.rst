@@ -89,6 +89,15 @@ This will update the contents of /path/to/bibxml-data-archive/bibxml4.
 It won’t affect any of the XML files but it will create new sidecar YAML files
 with ``primary_docid`` pointing to respective values within the given mapping YAML.
 
+If you are able to locally run a local copy of the service with sources indexed
+(or don’t mind hitting an online instance), it’s recommended to pass BibXML API root,
+in which case the service will validate that each primary docids exist before writing.
+
+- Supply API access info with ``--bibxml-api-root <URL>`` and ``--bibxml-api-token <Datatracker token>``
+- ``--validate-mappings`` can be set to ``strict``, ``skip`` or ``warn``
+  (``strict`` will fail with an error if any docid doesn’t exist,
+  ``skip`` will not output files for such paths)
+
 Notable behavior that may cause data loss
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

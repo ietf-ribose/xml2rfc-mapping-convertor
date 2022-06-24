@@ -1,8 +1,9 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import glob
 import os
 from pathlib import Path
 
+import requests
 import yaml
 import typer
 from tqdm import tqdm
@@ -11,6 +12,9 @@ from tqdm import tqdm
 def update_sidecar_meta(
     fn: str,
     datadir: str,
+    bibxml_api_root: Optional[str] = None,
+    bibxml_api_token: Optional[str] = None,
+    validate_mappings: Optional[str] = 'strict',
     verbose: bool = False,
 ):
 
@@ -20,6 +24,7 @@ def update_sidecar_meta(
         'orphaned sidecar files': 0,
         'malformed sidecar files': 0,
         'nonexistent paths mapped': 0,
+        'nonexistent docids referenced': 0,
     }
 
 
@@ -45,14 +50,14 @@ def update_sidecar_meta(
 
     if isinstance(mapping_dict, dict):
         all_paths = mapping_dict.keys()
-        mapped_paths = [
+        _mapped_paths = [
             p for p in all_paths
             if p in mapping_dict and (mapping_dict.get(p, None) or '').strip() != ''
         ]
         if verbose:
-            typer.echo(f"Given {len(mapped_paths)} mapped path(s)")
+            typer.echo(f"Given {len(_mapped_paths)} mapped path(s)")
         xml_basenames = [os.path.basename(p) for p in xml_files]
-        for mapped_path in mapped_paths:
+        for mapped_path in _mapped_paths:
             if mapped_path not in xml_basenames:
                 typer.secho(f"Mapping references nonexistent file: %s" % mapped_path, err=True, fg='red')
                 error_stats['nonexistent paths mapped'] += 1
@@ -60,9 +65,31 @@ def update_sidecar_meta(
         typer.echo(f"File contains an invalid structure", err=True)
         raise typer.Exit(code=1)
 
-    if len(mapped_paths) < 1:
+    if len(_mapped_paths) < 1:
         typer.echo("Nothing to do: file contains no mapped paths", err=True)
         raise typer.Exit(code=0)
+
+
+    # Check that mapped docids exist
+
+    if bibxml_api_root and bibxml_api_token:
+        paths_mapping_to_nonexistent_docid: List[str] = []
+        for key, value in mapping_dict.items():
+            if not check_docid_exists(value, bibxml_api_root, bibxml_api_token):
+                typer.echo(f"Path {key} is mapped to nonexistent docid {value}", err=True)
+                error_stats['nonexistent docids referenced'] += 1
+                paths_mapping_to_nonexistent_docid.append(key)
+
+        if len(paths_mapping_to_nonexistent_docid) > 0:
+            if validate_mappings == 'strict':
+                typer.echo("Paths mapped to docids that don’t exist (see stderr), aborting", err=True)
+                typer.Exit(code=1)
+            elif validate_mappings == 'skip':
+                typer.echo("Warning: skipping paths mapped to docids that don’t exist (see stderr)", err=True)
+                for p in paths_mapping_to_nonexistent_docid:
+                    del mapping_dict[p]
+            else:
+                typer.echo("Warning: there are paths mapped to docids that don’t exist (see stderr), aborting", err=True)
 
 
     # Check data dir
@@ -160,6 +187,23 @@ def validate_sidecar(entry: Dict[str, Any]):
         raise ValueError("Invalid or missing primary docid mapping")
     if invalid is not None and not isinstance(invalid, bool):
         raise ValueError("Invalid “invalid” marker")
+
+
+def check_docid_exists(docid: str, api_root: str, api_token: str) -> bool:
+    url = f"{api_root.removesuffix('/')}/by-docid/?docid={docid}&format=relaton"
+    print("Checkign odicd", url)
+    resp = requests.get(url, headers={
+        'X-Datatracker-Token': api_token,
+    })
+
+    if resp.status_code == 404:
+        return False
+    else:
+        try:
+            resp.raise_for_status()
+        except Exception as err:
+            typer.echo(f"Error checking docid existence ({err})", err=True)
+        return True
 
 
 if __name__ == '__main__':
