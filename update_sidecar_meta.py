@@ -75,7 +75,7 @@ def update_sidecar_meta(
     if bibxml_api_root and bibxml_api_token:
         paths_mapping_to_nonexistent_docid: List[str] = []
         for key, value in mapping_dict.items():
-            if not check_docid_exists(value, bibxml_api_root, bibxml_api_token):
+            if check_docid_exists(value, bibxml_api_root, bibxml_api_token) is False:
                 typer.echo(f"Path {key} is mapped to nonexistent docid {value}", err=True)
                 error_stats['nonexistent docids referenced'] += 1
                 paths_mapping_to_nonexistent_docid.append(key)
@@ -189,7 +189,11 @@ def validate_sidecar(entry: Dict[str, Any]):
         raise ValueError("Invalid “invalid” marker")
 
 
-def check_docid_exists(docid: str, api_root: str, api_token: str) -> bool:
+def check_docid_exists(docid: str, api_root: str, api_token: str) -> Optional[bool]:
+    """
+    Makes a request to BibXML service API, returns True if a bibitem with given
+    docid is found, False if not found, None if another error occurred.
+    """
     url = f"{api_root.removesuffix('/')}/by-docid/?docid={docid}&format=relaton"
     resp = requests.get(url, headers={
         'X-Datatracker-Token': api_token,
@@ -202,7 +206,9 @@ def check_docid_exists(docid: str, api_root: str, api_token: str) -> bool:
             resp.raise_for_status()
         except Exception as err:
             typer.echo(f"Error checking docid existence ({err})", err=True)
-        return True
+            return None
+        else:
+            return True
 
 
 if __name__ == '__main__':
