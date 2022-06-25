@@ -262,7 +262,9 @@ def get_methods_tried(headers: Dict[str, Any]) -> Tuple[
         if len(methods) == len(outcomes):
             for method, outcome in zip(methods, outcomes):
                 if ',' in outcome:
-                    config, err = outcome.split(',')
+                    parts = outcome.split(',')
+                    config = ','.join(parts[:len(parts) - 1]).strip()
+                    err = parts[-1].strip()
                     outcome = MethodOutcome(
                         method=method,
                         success=err == '',
