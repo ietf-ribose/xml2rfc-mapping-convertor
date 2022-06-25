@@ -1,4 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Optional, Any, TextIO, cast
+import traceback
 import os
 import glob
 from pathlib import Path
@@ -101,6 +102,8 @@ def test_xml2rfc_paths(
                 "Failed to test directory %s (%s)" % (dirname, err),
                 err=True,
                 fg='red')
+            if verbosity > 1:
+                traceback.print_exc()
             continue
         else:
             outcomes[_dirname] = outcome
