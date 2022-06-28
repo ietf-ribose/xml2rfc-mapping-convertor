@@ -50,7 +50,12 @@ For each directory,
 - An HTML report is written with breakdown by path and stats at the end.
 - A simple log file is written with basic stats (failed count and counts by resolution method).
 
-.. note:: Both files are updated continuously and hitting ``Ctrl+C`` halfway will still leave usable results.
+.. note::
+
+   Both files are updated continuously.
+
+   - You can view the report before the test finishes.
+   - Hitting ``Ctrl+C`` at any point will leave a valid report for paths processed so far.
 
 
 Reference comparison
