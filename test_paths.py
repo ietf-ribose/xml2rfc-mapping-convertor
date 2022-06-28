@@ -91,6 +91,11 @@ def test_xml2rfc_paths(
     if _continue_at and verbosity > 1:
         typer.echo(f"Continuing at {_continue_at}")
 
+    if continue_at and not _continue_at:
+        typer.echo(
+            f"WARNING: Ignoring --continue-at: Cannot have effect with flag combination",
+            err=True)
+
     for _dirname in dirnames:
         if reports_dir:
             report, destroy_reporter = create_reporter(
@@ -127,7 +132,7 @@ def test_xml2rfc_paths(
         else:
             outcomes[_dirname] = outcome
             if destroy_reporter:
-                destroy_reporter()
+                destroy_reporter(None)
         finally:
             if destroy_reporter:
                 destroy_reporter('aborted')
@@ -349,7 +354,7 @@ def create_reporter(
     reports_root: str,
     reference_root: Optional[str] = None,
     do_continue = False,
-) -> Tuple[Callable[[str, PathOutcome], None], Callable[[], None]]:
+) -> Tuple[Callable[[str, PathOutcome], None], Callable[[Optional[str]], None]]:
 
     _reports_dir = Path(reports_root)
     stats_fpath = _reports_dir / f'{dirname}-stats.log'
