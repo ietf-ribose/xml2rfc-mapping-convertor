@@ -1,4 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Optional, Any, TextIO, cast
+import time
 import traceback
 import os
 import glob
@@ -68,6 +69,8 @@ def test_xml2rfc_paths(
     check_aliases: bool = False,
     randomize: bool = False,
     verbosity: int = 1,
+    sleep: int = 0,
+    continue_at: Optional[int] = 0,
 ):
     if dirname:
         dirnames = [dirname]
@@ -76,6 +79,18 @@ def test_xml2rfc_paths(
 
     outcomes: Dict[str, Dict[str, Any]] = dict()
 
+    _continue_at: int = cast(int, continue_at) if all([
+        continue_at,
+        dirname,
+        not check_aliases,
+        not randomize,
+    ]) else 0
+    # continue_at only makes sense if a single dir
+    # is tested and randomization is off
+
+    if _continue_at and verbosity > 1:
+        typer.echo(f"Continuing at {_continue_at}")
+
     for _dirname in dirnames:
         if reports_dir:
             report, destroy_reporter = create_reporter(
@@ -83,6 +98,7 @@ def test_xml2rfc_paths(
                 _dirname,
                 reports_dir,
                 reference_root,
+                do_continue=_continue_at != 0,
             )
         else:
             report, destroy_reporter = None, None
@@ -96,6 +112,9 @@ def test_xml2rfc_paths(
                 check_aliases=check_aliases,
                 randomize=randomize,
                 verbosity=verbosity,
+                sleep=sleep,
+
+                continue_at=_continue_at,
             )
         except Exception as err:
             typer.secho(
@@ -107,9 +126,11 @@ def test_xml2rfc_paths(
             continue
         else:
             outcomes[_dirname] = outcome
-        finally:
             if destroy_reporter:
                 destroy_reporter()
+        finally:
+            if destroy_reporter:
+                destroy_reporter('aborted')
 
     raise typer.Exit(code=0)
 
@@ -123,6 +144,8 @@ def test_xml2rfc_dir(
     check_aliases: bool = False,
     randomize: bool = False,
     verbosity: int = 1,
+    sleep: int = 0,
+    continue_at: Optional[int] = 0,
 ) -> Dict[str, PathOutcome]:
     """
     Goes through each file
@@ -145,25 +168,47 @@ def test_xml2rfc_dir(
     else:
         dirnames = [dirname]
 
+    start_idx = continue_at if not check_aliases and not randomize else 0
+    # Starting at a particular file only makes sense if aliases aren’t checked
+    # and randomization is off
+
     xml_files = glob.glob(f'{archive_root}/{dirname}/*.xml')
+
+    total = len(xml_files)
 
     if randomize:
         random.shuffle(xml_files)
+    elif start_idx:
+        xml_files = xml_files[start_idx:]
 
     outcomes: Dict[str, PathOutcome] = dict()
 
     for alias in dirnames:
-        for xml_fname in tqdm(xml_files, desc="Checking paths in %s" % alias):
-            basename = os.path.basename(xml_fname)
-            basename_noext = os.path.splitext(basename)[0]
-            outcome = test_xml2rfc_path(
-                f'{dirname}/{basename}',
-                api_root,
-                reference_root,
-            )
-            if on_outcome:
-                on_outcome(xml_fname, outcome)
-            outcomes[xml_fname] = outcome
+        desc = "%s" % alias
+        with tqdm(total=total, unit="paths", desc=desc) as pbar:
+            if start_idx:
+                pbar.update(start_idx)
+
+            for xml_fname in xml_files:
+                basename = os.path.basename(xml_fname)
+                basename_noext = os.path.splitext(basename)[0]
+                outcome = test_xml2rfc_path(
+                    f'{dirname}/{basename}',
+                    api_root,
+                    reference_root,
+                    on_action=(
+                        lambda _desc:
+                        pbar.set_description(f"{desc}: {_desc}")
+                    ),
+                )
+                if on_outcome:
+                    on_outcome(xml_fname, outcome)
+                outcomes[xml_fname] = outcome
+                pbar.update(1)
+                if sleep:
+                    pbar.set_description_str(f"{desc}: sleeping…")
+                    time.sleep(sleep)
+                    pbar.set_description(desc)
 
     return outcomes
 
@@ -172,6 +217,7 @@ def test_xml2rfc_path(
     subpath: str,
     api_root: str,
     reference_root: Optional[str] = None,
+    on_action: Optional[Callable[[str], None]] = None,
 ) -> PathOutcome:
     """
     Tests a given subpath by:
@@ -194,6 +240,9 @@ def test_xml2rfc_path(
         2-tuple (outcome, diff) where diff will be None
         if request to reference fails or if ``reference_root`` is not given.
     """
+
+    if on_action:
+        on_action("resolving")
 
     test_url = f"{api_root.removesuffix('/')}/{subpath}"
     test_resp = requests.get(
@@ -218,6 +267,8 @@ def test_xml2rfc_path(
         )
 
     if reference_root:
+        if on_action:
+            on_action("comparing")
         reference_url = f"{reference_root.removesuffix('/')}/{subpath}"
         reference_result = requests.get(reference_url)
         try:
@@ -297,78 +348,96 @@ def create_reporter(
     dirname: str,
     reports_root: str,
     reference_root: Optional[str] = None,
+    do_continue = False,
 ) -> Tuple[Callable[[str, PathOutcome], None], Callable[[], None]]:
+
     _reports_dir = Path(reports_root)
-    stats_file = open(_reports_dir / f'{dirname}-stats.log', 'w')
-    report_file = open(_reports_dir / f'{dirname}-report.html', 'w')
-    report_file.truncate(0)
-    report_file.seek(0)
-    report_file.write(f'''<!doctype html>
-        <head>
-        <style>
-            body, html {{
-                padding: 0;
-                margin: 0;
-            }}
-            body {{
-                padding: 1em;
-                font-size: 14px;
-                line-height: 1.2;
-                font-family: sans-serif;
-            }}
-            h1 {{
-                font-size: 120%;
-            }}
-            pre.xml {{
-                white-space: pre-line;
-                max-width: 80vw;
-                overflow: auto;
-                background: whiteSmoke;
-                padding: 1em;
-            }}
-            .tools a {{
-                margin-right: 1em;
-            }}
-        </style>
-        <meta charset="utf-8">
-        <title>xml2rfc path report for {dirname} directory</title>
-        <body>
-        <h1>xml2rfc path report for {dirname} directory</h1>
-        <p>
-            Testing {api_root}
-            {"comparing with " if reference_root else ""}{reference_root or ""}
+    stats_fpath = _reports_dir / f'{dirname}-stats.log'
+    report_file = open(_reports_dir / f'{dirname}-report.html', 'a')
 
-        <p class="tools">
-            <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">
-                Expand everything</a>
-            <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">
-                Collapse everything</a>
-            <br />
-            <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">
-                Hide successful paths</a>
-            <a style="{"display: none" if not reference_root else ""}"
-                href="javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')">
-                Hide paths w/o diff</a>
-            <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">
-                Show all paths</a>
-            <input type="text" onkeyup="const v = this.value; const allp = document.querySelectorAll('details.path'); v ? [...allp].filter(el => el.dataset.searchable.toLowerCase().indexOf(v.toLowerCase()) < 0).forEach(el => el.style.display = 'none') : allp.forEach(el => el.style.display = 'block');" placeholder="Search paths" />
-        </p>
+    stats: Stats
 
+    if do_continue:
+        with open(stats_fpath, 'r') as _stats_file:
+            try:
+                stats = Stats(**yaml.load(_stats_file, Loader=yaml.SafeLoader))
+            except Exception:
+                raise RuntimeError("Unable to continue (cannot read preexisting stats)")
+    else:
+        stats = Stats()
+
+        report_file.truncate(0)
+        report_file.seek(0)
+        report_file.write(f'''<!doctype html>
+            <head>
+            <style>
+                body, html {{
+                    padding: 0;
+                    margin: 0;
+                }}
+                body {{
+                    padding: 1em;
+                    font-size: 14px;
+                    line-height: 1.2;
+                    font-family: sans-serif;
+                }}
+                h1 {{
+                    font-size: 120%;
+                }}
+                pre.xml {{
+                    white-space: pre-line;
+                    max-width: 80vw;
+                    overflow: auto;
+                    background: whiteSmoke;
+                    padding: 1em;
+                }}
+                .tools a {{
+                    margin-right: 1em;
+                }}
+            </style>
+            <meta charset="utf-8">
+            <title>xml2rfc path report for {dirname} directory</title>
+            <body>
+            <h1>xml2rfc path report for {dirname} directory</h1>
+            <p>
+                Testing {api_root}
+                {"comparing with " if reference_root else ""}{reference_root or ""}
+
+            <p class="tools">
+                <a href="javascript:document.querySelectorAll('details').forEach(el => el.setAttribute('open', 'open'))">
+                    Expand everything</a>
+                <a href="javascript:document.querySelectorAll('details').forEach(el => el.removeAttribute('open'))">
+                    Collapse everything</a>
+                <br />
+                <a href="javascript:document.querySelectorAll('details.path:not(.error)').forEach(el => el.style.display = 'none')">
+                    Hide successful paths</a>
+                <a style="{"display: none" if not reference_root else ""}"
+                    href="javascript:document.querySelectorAll('details.path:not(.has-diff)').forEach(el => el.style.display = 'none')">
+                    Hide paths w/o diff</a>
+                <a href="javascript:document.querySelectorAll('details.path').forEach(el => el.style.display = 'block')">
+                    Show all paths</a>
+                <input type="text" onkeyup="const v = this.value; const allp = document.querySelectorAll('details.path'); v ? [...allp].filter(el => el.dataset.searchable.toLowerCase().indexOf(v.toLowerCase()) < 0).forEach(el => el.style.display = 'none') : allp.forEach(el => el.style.display = 'block');" placeholder="Search paths" />
+            </p>
+        ''')
+
+    report_file.write('''
         <details>
             <summary>Processed paths</summary>
     ''')
 
-    stats: Stats = Stats()
-    report: List[Tuple[str, PathOutcome]] = []
+    stats_file = open(stats_fpath, 'w')
 
-    def destroy():
+    def destroy(err: Optional[str] = None):
         try:
             stats_file.close()
         except:
             pass
         try:
             report_file.write('</details>')
-            report_file.write('<h2>Stats</h2>')
+            if err:
+                report_file.write(f'<h2>Aborted: stats so far</h2>')
+            else:
+                report_file.write(f'<h2>Stats</h2>')
             report_file.write(f'<pre>{yaml.dump(dataclasses.asdict(stats))}</pre>')
         except:
             pass
