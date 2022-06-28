@@ -190,7 +190,7 @@ def test_xml2rfc_dir(
 
     for alias in dirnames:
         desc = "%s" % alias
-        with tqdm(total=total, unit="paths", desc=desc) as pbar:
+        with tqdm(total=total, unit="path", desc=desc) as pbar:
             if start_idx:
                 pbar.update(start_idx)
 
