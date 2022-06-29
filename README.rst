@@ -135,5 +135,5 @@ YAML filename to read and YAML filename to write. It also excludes unmapped path
 validate.py
 ===========
 
-Given local path to bibxml-data-root, outputs to stdout any file
+Given local path to bibxml-data-archive repository root, outputs to stdout any file
 with unicode decode errors or NUL characters that break XML parsing.
