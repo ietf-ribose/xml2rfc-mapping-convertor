@@ -1,10 +1,9 @@
 Helper scripts for working with xml2rfc paths and mappings.
 
-- ``test_paths.py`` allows to check how legacy xml2rfc paths work on live service,
-  optionally comparind with a reference
-- Given a YAML file with docid mappings,
-  ``update_sidecar_meta.py`` writes sidecar metadata into bibxml-data-archive structure
-
+- |test_paths.py|_ for testing xml2rfc paths
+- |update_sidecar_meta.py|_ for writing xml2rfc archive YAML sidecar metadata files from a simple YAML mapping file
+- |validate.py|_ for validating xml2rfc archive XML contents for possible encoding issues and such
+- |fix_w3c_mappings.py|_ for ensuring simple YAML mapping for W3C has docids prefixed with W3C, as per Relaton source
 
 Setup
 =====
@@ -15,6 +14,8 @@ Setup
     source env/bin/activate
     pip install -r requirements.txt
 
+.. |test_paths.py| replace:: ``test_paths.py``
+.. _test_paths.py: #test_pathspy
 
 test_paths.py
 =============
@@ -77,6 +78,8 @@ serialized to bibxml on the fly from authoritative bibliographic source data).
 
 .. important:: There’s no throttling and endpoint provided via ``reference-root`` will be hammered many times during the test run.
 
+.. |update_sidecar_meta.py| replace:: ``update_sidecar_meta.py``
+.. _update_sidecar_meta.py: #update_sidecar_metapy
 
 update_sidecar_meta.py
 ======================
@@ -122,6 +125,8 @@ Notable behavior that may cause data loss
 - Preexisting docid mapping, if any for given mapped path, is overwritten (with stderr warning).
   The rest of sidecar metadata is preserved.
 
+.. |fix_w3c_mappings.py| replace:: ``fix_w3c_mappings.py``
+.. _fix_w3c_mappings.py: #fix_w3c_mappingspy
 
 fix_w3c_mappings.py
 ===================
@@ -131,6 +136,8 @@ provided per https://github.com/ietf-ribose/bibxml-service/issues/133
 seem to be missing a “W3C ” prefix. This script adds it, and takes two arguments:
 YAML filename to read and YAML filename to write. It also excludes unmapped paths.
 
+.. |validate.py| replace:: ``validate.py``
+.. _validate.py: #validatepy
 
 validate.py
 ===========
