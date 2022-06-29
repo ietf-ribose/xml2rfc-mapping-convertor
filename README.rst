@@ -33,14 +33,16 @@ Example::
 Arguments:
 
 - First argument is API endpoint to test (complete with ``/public/rfc/`` suffix)
-- Second argument is ``bibxml-data-archive`` root on your local machine
-- ``dirname`` indicates a directory to test
-- ``verbosity`` indicates verbosity level (default is 1)
-- ``reports-dir`` points to a directory where reports can be placed (directory must exist, can be relative).
-- ``randomize`` will cause paths to be processed at random,
+- Second argument is path to ``bibxml-data-archive`` repository root on your local machine
+- ``--dirname <str>`` indicates a directory to test, e.g. “bibxml2”
+- ``--verbosity <number>`` indicates verbosity level (default is 1)
+- ``--reports-dir some/dir`` points to a directory where reports can be placed (directory must exist, can be relative)
+- ``--randomize`` will cause paths to be processed at random,
   which means you can test a random subset of paths by running the script for a bit and aborting with ``Ctrl+C``
-- ``reference-root`` will additionally hit this API endpoint
-- ``check-aliases`` will additionally check path aliases (e.g., ``bibxml-w3c`` will also be checked for dirname ``bibxml4``)
+- ``--reference-root <URL>`` will additionally hit this API endpoint, and diff XML with it
+- ``--check-aliases`` will additionally check path aliases (e.g., ``bibxml-w3c`` will also be checked for dirname ``bibxml4``)
+- ``--continue-at <num>`` will continue from path at given index. Requires a specific ``--dirname`` to work, and is incompatible (has no effect) with ``--check-aliases``, ``--randomize``
+- ``--sleep <num>`` wait for this many seconds after each tested path (a sort of naive throttling mechanism)
 
 Reports
 -------
