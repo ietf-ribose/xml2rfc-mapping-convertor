@@ -39,7 +39,7 @@ Arguments:
 - ``--randomize`` will cause paths to be processed at random,
   which means you can test a random subset of paths by running the script for a bit and aborting with ``Ctrl+C``
 - ``--reference-root <URL>`` will additionally hit this API endpoint, and diff XML with it
--and  ``--check-aliases`` will additionally check path aliases (e.g., ``bibxml-w3c`` will also be checked for dirname ``bibxml4``; twice as many paths would be checked)
+- ``--check-aliases`` will additionally check path aliases (e.g., ``bibxml-w3c`` will also be checked for dirname ``bibxml4``; twice as many paths would be checked)
 - ``--continue-at <num>`` will continue from path at given index. Requires a specific ``--dirname`` to work, and is incompatible (has no effect) with ``--check-aliases``, ``--randomize``
 - ``--sleep <num>`` wait for this many seconds after each tested path (a sort of naive throttling mechanism)
 - ``--verbosity <number>`` indicates verbosity level (default is 1)
