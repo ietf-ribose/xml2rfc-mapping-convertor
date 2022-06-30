@@ -458,14 +458,17 @@ def create_reporter(
 
         if outcome.error:
             outcome_label = '<strong>error ⚠️</strong>'
-            outcome_desc = (
-                f'<p>Request failed with (error possibly truncated): '
+            outcome_desc_lis = (
+                f'<li>Request failed with (error possibly truncated): '
                 f'<pre class="xml">{html.escape(outcome.error[:500])}</pre>'
             )
             stats.failed += 1
         elif meth := outcome.successful_method:
             outcome_label = meth.method
-            outcome_desc = f'<p>{method_labels[meth.method]} succeeded'
+            outcome_desc_lis = f'<li>{method_labels[meth.method]} succeeded'
+            for meth in (outcome.methods_tried or []):
+                if meth.error:
+                    outcome_desc_lis = f"<li>{method_labels[meth.method]} ({meth.config or 'config N/A'}) failed: {meth.error} {outcome_desc_lis}"
             if meth.method == 'manual':
                 stats.used_mapping += 1
             elif meth.method == 'auto':
@@ -474,7 +477,7 @@ def create_reporter(
                 stats.used_fallback += 1
         else:
             outcome_label = ''
-            outcome_desc = ''
+            outcome_desc_lis = ''
 
         if reference_root and outcome.reference:
             ref_url = f"{reference_root.removesuffix('/')}/{dirname}/{basename}"
@@ -513,9 +516,10 @@ def create_reporter(
                     {"— diff available" if outcome.diff else ""}
                 </summary>
                 <div style="padding: 0 1em 1em 1em;">
-                    <p>
-                        Attempted <a href="{test_url}">{test_url}</a>
-                        {outcome_desc}
+                    <ul>
+                        <li>Attempted <a href="{test_url}">{test_url}</a>
+                        {outcome_desc_lis}
+                    </ul>
                     {reference_link}
                     {xml}
                 </div>
