@@ -71,6 +71,7 @@ def test_xml2rfc_paths(
     verbosity: int = 1,
     sleep: int = 0,
     continue_at: Optional[int] = 0,
+    regex_paths: Optional[str] = '*',
 ):
     if dirname:
         dirnames = [dirname]
@@ -118,6 +119,7 @@ def test_xml2rfc_paths(
                 randomize=randomize,
                 verbosity=verbosity,
                 sleep=sleep,
+                regex_paths=regex_paths,
 
                 continue_at=_continue_at,
             )
@@ -151,6 +153,7 @@ def test_xml2rfc_dir(
     verbosity: int = 1,
     sleep: int = 0,
     continue_at: Optional[int] = 0,
+    regex_paths: Optional[str] = '*',
 ) -> Dict[str, PathOutcome]:
     """
     Goes through each file
@@ -177,7 +180,7 @@ def test_xml2rfc_dir(
     # Starting at a particular file only makes sense if aliases aren’t checked
     # and randomization is off
 
-    xml_files = glob.glob(f'{archive_root}/{dirname}/*.xml')
+    xml_files = glob.glob(f'{archive_root}/{dirname}/{regex_paths}.xml')
 
     total = len(xml_files)
 
