@@ -198,6 +198,7 @@ def test_xml2rfc_dir(
                 basename = os.path.basename(xml_fname)
                 basename_noext = os.path.splitext(basename)[0]
                 outcome = test_xml2rfc_path(
+                    archive_root,
                     f'{dirname}/{basename}',
                     api_root,
                     reference_root,
@@ -219,6 +220,7 @@ def test_xml2rfc_dir(
 
 
 def test_xml2rfc_path(
+    archive_root: str,
     subpath: str,
     api_root: str,
     reference_root: Optional[str] = None,
@@ -271,9 +273,10 @@ def test_xml2rfc_path(
             successful_method=successful_method,
         )
 
+    if on_action:
+        on_action("comparing")
+
     if reference_root:
-        if on_action:
-            on_action("comparing")
         reference_url = f"{reference_root.removesuffix('/')}/{subpath}"
         reference_result = requests.get(reference_url)
         try:
@@ -286,17 +289,24 @@ def test_xml2rfc_path(
                 )
         else:
             outcome.reference = reference_result.text
-            if all([
-                outcome.resulting_xml,
-                outcome.reference,
-                outcome.reference != outcome.resulting_xml,
-            ]):
-                diffs = dmp.diff_main(
-                    outcome.reference,
-                    outcome.resulting_xml,
-                )
-                dmp.diff_cleanupSemantic(diffs)
-                outcome.diff = dmp.diff_prettyHtml(diffs)
+    else:
+        with open(f'{archive_root}/{subpath}', 'r') as ref_fh:
+            try:
+                outcome.reference = ref_fh.read()
+            except UnicodeDecodeError as err:
+                typer.echo(f"failed to decode XML: {err}", err=True)
+
+    if all([
+        outcome.resulting_xml,
+        outcome.reference,
+        outcome.reference != outcome.resulting_xml,
+    ]):
+        diffs = dmp.diff_main(
+            outcome.reference,
+            outcome.resulting_xml,
+        )
+        dmp.diff_cleanupSemantic(diffs)
+        outcome.diff = dmp.diff_prettyHtml(diffs)
 
     return outcome
 
