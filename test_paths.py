@@ -11,6 +11,7 @@ import random
 import yaml
 import typer
 import requests
+from lxml import etree
 from tqdm import tqdm
 
 import diff_match_patch
@@ -305,13 +306,17 @@ def test_xml2rfc_path(
         outcome.reference != outcome.resulting_xml,
     ]):
         diffs = dmp.diff_main(
-            outcome.reference,
-            outcome.resulting_xml,
+            canonicalize(cast(str, outcome.reference)),
+            canonicalize(cast(str, outcome.resulting_xml)),
         )
         dmp.diff_cleanupSemantic(diffs)
         outcome.diff = dmp.diff_prettyHtml(diffs)
 
     return outcome
+
+
+def canonicalize(data: str) -> str:
+    return etree.canonicalize(data)
 
 
 def get_methods_tried(headers: Dict[str, Any]) -> Tuple[
