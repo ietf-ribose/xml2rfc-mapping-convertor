@@ -305,12 +305,16 @@ def test_xml2rfc_path(
         outcome.reference,
         outcome.reference != outcome.resulting_xml,
     ]):
-        diffs = dmp.diff_main(
-            canonicalize(cast(str, outcome.reference)),
-            canonicalize(cast(str, outcome.resulting_xml)),
-        )
-        dmp.diff_cleanupSemantic(diffs)
-        outcome.diff = dmp.diff_prettyHtml(diffs)
+        try:
+            diffs = dmp.diff_main(
+                canonicalize(cast(str, outcome.reference)),
+                canonicalize(cast(str, outcome.resulting_xml)),
+            )
+        except Exception as err:
+            typer.echo(f"failed to canonicalize obtained or reference XML for {subpath}: {err}")
+        else:
+            dmp.diff_cleanupSemantic(diffs)
+            outcome.diff = dmp.diff_prettyHtml(diffs)
 
     return outcome
 
