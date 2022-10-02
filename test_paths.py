@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from typing import Callable, List, Tuple, Dict, Optional, Any, TextIO, cast
 import time
 import traceback

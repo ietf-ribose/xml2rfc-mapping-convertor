@@ -45,6 +45,16 @@ Arguments:
 - ``--sleep <num>`` wait for this many seconds after each tested path (a sort of naive throttling mechanism)
 - ``--verbosity <number>`` indicates verbosity level (default is 1)
 
+Docker usage
+------------
+
+This uses remote instance, but you could do local Docker-to-Docker if you set up
+networking properly.
+
+::
+
+    docker run -it -v $(pwd):/code -v /path/to/bibxml-data-archive:/archive test-paths "./test_paths.py https://some.bibxml.service.instance.test/public/rfc /archive --dirname bibxml --verbosity 2 --reports-dir path-reports --randomize"
+
 Reports
 -------
 
