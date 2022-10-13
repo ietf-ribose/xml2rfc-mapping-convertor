@@ -1,4 +1,5 @@
 pyyaml>=5.4
 typer
 lxml
+tqdm
 requests
