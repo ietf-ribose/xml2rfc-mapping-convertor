@@ -51,7 +51,11 @@ Docker usage
 This uses remote instance, but you could do local Docker-to-Docker if you set up
 networking properly.
 
-::
+Build the image::
+
+    docker build . -t test-paths
+
+Then::
 
     docker run -it -v $(pwd):/code -v /path/to/bibxml-data-archive:/archive test-paths "./test_paths.py https://some.bibxml.service.instance.test/public/rfc /archive --dirname bibxml --verbosity 2 --reports-dir path-reports --randomize"
 
